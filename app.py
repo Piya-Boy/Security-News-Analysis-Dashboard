@@ -23,7 +23,7 @@ st.set_page_config(page_title="Security News Analysis", page_icon=logo, layout="
 API_URL = "https://piyamianglae.pythonanywhere.com/data"
 
 # Function to load and preprocess data from API
-# @st.cache_data(ttl=86400)  # Cache data for 24 hours
+@st.cache_data(ttl=86400)  # Cache data for 24 hours
 def load_data_from_api():
     try:
         # ดึงข้อมูลจาก API
@@ -135,19 +135,25 @@ def main():
     fig_yearly_attacks.update_xaxes(type="category")
     st.plotly_chart(fig_yearly_attacks, use_container_width=True)
 
-    # Display news articles
+    # Initialize session state for news limit
     if "news_limit" not in st.session_state:
         st.session_state.news_limit = 5
-
+    
+    # Function to load more news
+    def load_more_news():
+        st.session_state.news_limit += 5
+    
+    # Display news articles
     st.subheader(f"Security News - {selected_month} {selected_year}")
     displayed_df = filtered_df.head(st.session_state.news_limit)
+    
     for _, row in displayed_df.iterrows():
         with st.expander(f"{row['Date'].strftime('%B %d')} - {row['Title']}"):
             st.write("", row["Summary"])
-
+    
+    # Show "More" button if there are more news articles to display
     if st.session_state.news_limit < len(filtered_df):
-        if st.button("More"):
-            st.session_state.news_limit += 5
+        st.button("More", on_click=load_more_news)
 
 
 if __name__ == "__main__":
