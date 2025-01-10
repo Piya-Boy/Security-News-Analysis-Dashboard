@@ -69,16 +69,25 @@ def main():
 
     # Sidebar filter
     st.sidebar.header("Filter")
-    available_months = df["Month"].unique()
-    available_years = df["Year"].unique()
+    # เพิ่มตัวเลือก "All" สำหรับ Month และ Year
+    available_months = ["All"] + list(df["Month"].unique())
+    available_years = ["All"] + list(df["Year"].unique())
 
     selected_month = st.sidebar.selectbox("Select Month", options=available_months, index=0)
     selected_year = st.sidebar.selectbox("Select Year", options=available_years, index=0)
 
     # Sort by Year in descending order
     df = df.sort_values(by=["Year"], ascending=False)
-    # Filter data by selected Month and Year
-    filtered_df = df[(df["Month"] == selected_month) & (df["Year"] == selected_year)]
+
+    # Filter data based on selected Month and Year
+    if selected_month != "All" and selected_year != "All":
+        filtered_df = df[(df["Month"] == selected_month) & (df["Year"] == int(selected_year))]
+    elif selected_month != "All":
+        filtered_df = df[df["Month"] == selected_month]
+    elif selected_year != "All":
+        filtered_df = df[df["Year"] == int(selected_year)]
+    else:
+        filtered_df = df  # ถ้าเลือก "All" ทั้ง Month และ Year
 
     # Display last updated date
     last_updated = df["Date"].max().strftime("%B %d, %Y")
