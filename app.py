@@ -91,10 +91,10 @@ def main():
 
     # Display last updated date
     last_updated = df["Date"].max().strftime("%B %d, %Y")
-    st.sidebar.markdown(f"---\n**Last Updated:** {last_updated}", unsafe_allow_html=True)
+    st.sidebar.markdown(f"---\n**Updated:** {last_updated}", unsafe_allow_html=True)
 
-    # Monthly Summary
-    st.subheader("Monthly Summary")
+    #  Summary
+    st.subheader(f"Yearly Summary" if selected_month == "All" or selected_year == "All" else "Monthly Summary")
     col1, col2 = st.columns(2)
     with col1:
         st.metric("Total Articles", len(filtered_df))
@@ -105,7 +105,7 @@ def main():
     # Trend and Distribution Charts
     col1, col2 = st.columns(2)
     with col1:
-        st.subheader("Attack Types Daily Trend")
+        st.subheader(f"{selected_month} {selected_year} Attack Types Trend" if selected_month != "All" and selected_year != "All" else "Attack Types Trend")
         attack_timeline = filtered_df.groupby("Date")["Category"].value_counts().unstack(fill_value=0)
         fig_attack_timeline = go.Figure()
         for category in attack_timeline.columns:
