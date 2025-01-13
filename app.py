@@ -157,7 +157,7 @@ def main():
     displayed_df = filtered_df.head(st.session_state.news_limit)
     
     for _, row in displayed_df.iterrows():
-        with st.expander(f"{row['Date'].strftime('%B %d')} - {row['Title']}"):
+        with st.expander(f"{row['Date'].strftime('%B %d %Y' if selected_month == 'All' and selected_year == 'All' else '%B %d')} - {row['Title']}"):
             st.write("", row["Summary"])
     
     # Show "More" button if there are more news articles to display
