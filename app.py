@@ -95,8 +95,7 @@ def main():
     # Display the latest update for each source
     for _, row in latest_updates.iterrows():
         full_source = row['Source']
-        # split only the domain name
-        source = full_source.split("//")[-1].split("/")[0]
+        source = full_source.split('/')[2] if full_source.startswith(("http://", "https://")) else full_source        
         last_updated = row['Date'].strftime("%B %d, %Y")
         st.sidebar.markdown(f"---\n**{source}:** Updated on {last_updated}", unsafe_allow_html=True)
 
