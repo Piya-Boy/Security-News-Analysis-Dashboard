@@ -91,13 +91,23 @@ def main():
 
     # Group by Source and get the latest update for each source
     latest_updates = df.groupby('Source')['Date'].max().reset_index()
-
-    # Display the latest update for each source
+    
+    # Sort the updates by Date in descending order
+    latest_updates = latest_updates.sort_values(by='Date', ascending=False)
+    
+    # Display the updates
+    st.sidebar.markdown("---", unsafe_allow_html=True)  # Add a single divider line
     for _, row in latest_updates.iterrows():
         full_source = row['Source']
-        source = full_source.split('/')[2] if full_source.startswith(("http://", "https://")) else full_source        
+        
+        # Split the URL to get the domain or use the original source
+        source = full_source.split('/')[2].replace("www.", "") if full_source.startswith(("http://", "https://")) else full_source
+        
+        # Format the domain with 'www.' if it's not already present
+        formatted_source = f"www.{source}" if not source.startswith("www.") else source
+        
         last_updated = row['Date'].strftime("%B %d, %Y")
-        st.sidebar.markdown(f"---\n**{source}:** Updated on {last_updated}", unsafe_allow_html=True)
+        st.sidebar.markdown(f"**{formatted_source}:**  \nUpdated on {last_updated}", unsafe_allow_html=True)  # Note the double space before \n
 
     # Summary
     st.subheader(f"Yearly Summary" if selected_month == "All" or selected_year == "All" else "Monthly Summary")
