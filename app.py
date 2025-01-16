@@ -17,18 +17,16 @@ nltk.download("stopwords")
 # Page configuration
 logo="https://img5.pic.in.th/file/secure-sv1/logos02edf0d066b19226.png"
 st.set_page_config(page_title="Security News Analysis", page_icon=logo, layout="wide", )
-# tab_logo="logos.png"
 
 # URL ของ API
 API_URL = "https://piyamianglae.pythonanywhere.com/data"
 
 # Function to load and preprocess data from API
-@st.cache_data(ttl=86400)  # Cache data for 24 hours
+@st.cache_data(ttl=86400)  
 def load_data_from_api():
     try:
         # ดึงข้อมูลจาก API
         response = requests.get(API_URL)
-        # response.raise_for_status()  # ตรวจสอบว่าการเรียก API สำเร็จหรือไม่
         if response.status_code != 200:
             st.error(f"Error fetching data from API: {response.text}")
             return None
@@ -42,7 +40,7 @@ def load_data_from_api():
         df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
 
         # เพิ่มคอลัมน์ Month และ Year
-        df["Month"] = df["Date"].dt.strftime("%B")  # เช่น January, February
+        df["Month"] = df["Date"].dt.strftime("%B") 
         df["Year"] = df["Date"].dt.year.fillna(0).astype(int)
 
         return df
@@ -66,9 +64,9 @@ def main():
 
     # Logo
     st.sidebar.image(logo,caption="")
-
     # Sidebar filter
     st.sidebar.header("Filter")
+
     # เพิ่มตัวเลือก "All" สำหรับ Month และ Year
     available_months = ["All"] + list(df["Month"].unique())
     available_years = ["All"] + list(df["Year"].unique())
@@ -76,25 +74,35 @@ def main():
     selected_month = st.sidebar.selectbox("Select Month", options=available_months, index=0)
     selected_year = st.sidebar.selectbox("Select Year", options=available_years, index=0)
 
-    # Sort by Year in descending order
-    df = df.sort_values(by=["Year"], ascending=False)
+    # เพิ่มตัวเลือกประเภทการโจมตี
+    available_categories = ["All"] + list(df["Category"].unique())
+    selected_category = st.sidebar.selectbox("Select Attack Type", options=available_categories, index=0)
 
-    # Filter data based on selected Month and Year
-    if selected_month != "All" and selected_year != "All":
-        filtered_df = df[(df["Month"] == selected_month) & (df["Year"] == int(selected_year))]
-    elif selected_month != "All":
-        filtered_df = df[df["Month"] == selected_month]
-    elif selected_year != "All":
-        filtered_df = df[df["Year"] == int(selected_year)]
-    else:
-        filtered_df = df  # ถ้าเลือก "All" ทั้ง Month และ Year
+    # Filter data based on selected Month, Year, and Category
+    filtered_df = df.copy()
+    # Sort by Year in descending order◘
+    filtered_df = filtered_df.sort_values(by="Year", ascending=False)
+    if selected_month != "All":
+        filtered_df = filtered_df[filtered_df["Month"] == selected_month]
+    if selected_year != "All":
+        filtered_df = filtered_df[filtered_df["Year"] == int(selected_year)]
+    if selected_category != "All":
+        filtered_df = filtered_df[filtered_df["Category"] == selected_category]
 
-    # Display last updated date
-    last_updated = df["Date"].max().strftime("%B %d, %Y")
-    st.sidebar.markdown(f"---\n**Updated:** {last_updated}", unsafe_allow_html=True)
+    # Group by Source and get the latest update for each source
+    latest_updates = df.groupby('Source')['Date'].max().reset_index()
 
-    #  Summary
+    # Display the latest update for each source
+    for _, row in latest_updates.iterrows():
+        full_source = row['Source']
+        # split only the domain name
+        source = full_source.split("//")[-1].split("/")[0]
+        last_updated = row['Date'].strftime("%B %d, %Y")
+        st.sidebar.markdown(f"---\n**{source}:** Updated on {last_updated}", unsafe_allow_html=True)
+
+    # Summary
     st.subheader(f"Yearly Summary" if selected_month == "All" or selected_year == "All" else "Monthly Summary")
+
     col1, col2 = st.columns(2)
     with col1:
         st.metric("Total Articles", len(filtered_df))
@@ -102,11 +110,50 @@ def main():
         unique_attack_types = len(filtered_df["Category"].unique())
         st.metric("Unique Attack Types", unique_attack_types)
 
-    # Trend and Distribution Charts
+    # Attack Types Trend
     col1, col2 = st.columns(2)
     with col1:
-        st.subheader(f"{selected_month} {selected_year} Attack Types Trend" if selected_month != "All" and selected_year != "All" else "Attack Types Trend")
-        attack_timeline = filtered_df.groupby("Date")["Category"].value_counts().unstack(fill_value=0)
+        st.subheader(f"{selected_month} {selected_year} Attack Types Trend" 
+                    if selected_month != "All" and selected_year != "All" 
+                    else "Attack Types Trend")
+        
+        if selected_month == "All" and selected_year != "All":
+            # กรณีเลือกปีแต่ไม่เลือกเดือน: รวมตามเดือนในปีที่เลือก
+            attack_timeline = (
+                filtered_df[filtered_df["Year"] == int(selected_year)]
+                .groupby("Month")["Category"]
+                .value_counts()
+                .unstack(fill_value=0)
+            )
+        elif selected_month != "All" and selected_year == "All":
+            # กรณีเลือกเดือนแต่ไม่เลือกปี: รวมข้อมูลของเดือนนั้นๆ ในทุกปี
+            attack_timeline = (
+                filtered_df[filtered_df["Month"] == selected_month]
+                .groupby("Year")["Category"]
+                .value_counts()
+                .unstack(fill_value=0)
+            )
+        elif selected_month == "All" and selected_year == "All":
+            # กรณีไม่ได้เลือกทั้งเดือนและปี: รวมข้อมูลทั้งหมดตามปี
+            attack_timeline = (
+                filtered_df.groupby("Year")["Category"]
+                .value_counts()
+                .unstack(fill_value=0)
+            )
+        else:
+            # กรณีเลือกทั้งเดือนและปี: แสดงข้อมูลเฉพาะเดือนในปีที่เลือก
+            attack_timeline = (
+                filtered_df[
+                    (filtered_df["Year"] == int(selected_year)) &
+                    (filtered_df["Month"] == selected_month)
+                ]
+                .groupby("Date")["Category"]
+                .value_counts()
+                .unstack(fill_value=0)
+            )
+
+
+        # Create line chart without markers
         fig_attack_timeline = go.Figure()
         for category in attack_timeline.columns:
             fig_attack_timeline.add_trace(
@@ -114,15 +161,18 @@ def main():
                     x=attack_timeline.index,
                     y=attack_timeline[category],
                     name=category,
-                    mode="lines+markers",
+                    mode="lines",  # Line without points
                 )
             )
+        
+        # Update chart layout
         fig_attack_timeline.update_layout(
-            title=f"Daily Attack Types Trend - {selected_month} {selected_year}",
-            xaxis_title="Date",
+            title=f"Attack Types Trend - {selected_month} {selected_year}",
+            xaxis_title="Date" if selected_month != "All" and selected_year != "All" else "Year",
             yaxis_title="Number of Articles",
             hovermode="x unified",
         )
+        
         st.plotly_chart(fig_attack_timeline, use_container_width=True)
 
     with col2:
@@ -143,27 +193,28 @@ def main():
     fig_yearly_attacks = px.bar(attacks_by_year, x="Year", y="count")
     fig_yearly_attacks.update_xaxes(type="category")
     st.plotly_chart(fig_yearly_attacks, use_container_width=True)
-
+    
     # Initialize session state for news limit
     if "news_limit" not in st.session_state:
         st.session_state.news_limit = 5
-    
+
     # Function to load more news
     def load_more_news():
         st.session_state.news_limit += 5
-    
+
     # Display news articles
     st.subheader(f"Security News - {selected_month} {selected_year}")
     displayed_df = filtered_df.head(st.session_state.news_limit)
-    
+
+    # if selected_month == "All" and selected_year == "All" show year 
     for _, row in displayed_df.iterrows():
+        # with st.expander(f"{row['Date'].strftime('%B %d')} - {row['Title']}"):
         with st.expander(f"{row['Date'].strftime('%B %d %Y' if selected_month == 'All' and selected_year == 'All' else '%B %d')} - {row['Title']}"):
             st.write("", row["Summary"])
-    
+
     # Show "More" button if there are more news articles to display
     if st.session_state.news_limit < len(filtered_df):
         st.button("More", on_click=load_more_news)
-
 
 if __name__ == "__main__":
     main()
