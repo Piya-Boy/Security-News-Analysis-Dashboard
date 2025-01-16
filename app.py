@@ -107,7 +107,7 @@ def main():
         formatted_source = f"www.{source}" if not source.startswith("www.") else source
         
         last_updated = row['Date'].strftime("%B %d, %Y")
-        st.sidebar.markdown(f"**{formatted_source}:**  \nUpdated on {last_updated}", unsafe_allow_html=True)  # Note the double space before \n
+        st.sidebar.markdown(f"**{formatted_source}**  \nUpdated on {last_updated}", unsafe_allow_html=True)  # Note the double space before \n
 
     # Summary
     st.subheader(f"Yearly Summary" if selected_month == "All" or selected_year == "All" else "Monthly Summary")
