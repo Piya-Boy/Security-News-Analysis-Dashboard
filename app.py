@@ -181,7 +181,7 @@ def main():
             yaxis_title="Number of Articles",
             hovermode="x unified",
         )
-        
+        fig_attack_timeline.update_xaxes(type="category")        
         st.plotly_chart(fig_attack_timeline, use_container_width=True)
 
     with col2:
