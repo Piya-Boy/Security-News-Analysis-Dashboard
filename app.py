@@ -38,7 +38,9 @@ def load_data_from_api():
 
         # แปลงคอลัมน์ Date เป็น datetime
         df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
-
+        
+        df["Date"] = df["Date"].apply(lambda x: datetime.strptime(x, df["Date"]) if len(x) == 12 else datetime.strptime(x, "%B %d, %Y"))
+        
         # เพิ่มคอลัมน์ Month และ Year
         df["Month"] = df["Date"].dt.strftime("%B") 
         df["Year"] = df["Date"].dt.year.fillna(0).astype(int)
