@@ -110,14 +110,26 @@ def main():
         st.sidebar.markdown(f"**{formatted_source}**  \nUpdated on {last_updated}", unsafe_allow_html=True)  # Note the double space before \n
 
     
-    # Download CSV button
-    st.sidebar.markdown("---", unsafe_allow_html=True)  # Add a single divider line
+    # Function to convert DataFrame to CSV or JSON
+    def convert_df(df, file_format):
+        if file_format == 'CSV':
+            return df.to_csv(index=False).encode('utf-8')
+        elif file_format == 'JSON':
+            return df.to_json(orient='records').encode('utf-8')
+        else:
+            return None
+
+    # Add download button with format selection
+    st.sidebar.markdown("---", unsafe_allow_html=True)
+    file_format = st.sidebar.selectbox("Select Type", ["CSV", "JSON"])
+    data_to_download = convert_df(filtered_df, file_format)
     st.sidebar.download_button(
-        label="Download CSV",
-        data=filtered_df.to_csv(index=False).encode('utf-8'),
-        file_name="security_news.csv",
-        mime="text/csv"
+        label=f"Download {file_format}",
+        data=data_to_download,
+        file_name=f'Security_News.{file_format.lower()}',
+        mime=f'text/{file_format.lower()}', 
     )
+
     # Summary
     st.subheader(f"Yearly Summary" if selected_month == "All" or selected_year == "All" else "Monthly Summary")
 
