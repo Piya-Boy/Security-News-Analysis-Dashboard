@@ -109,6 +109,15 @@ def main():
         last_updated = row['Date'].strftime("%B %d, %Y")
         st.sidebar.markdown(f"**{formatted_source}**  \nUpdated on {last_updated}", unsafe_allow_html=True)  # Note the double space before \n
 
+    
+    # Download CSV button
+    st.sidebar.markdown("---", unsafe_allow_html=True)  # Add a single divider line
+    st.sidebar.download_button(
+        label="Download CSV",
+        data=filtered_df.to_csv(index=False).encode('utf-8'),
+        file_name="security_news.csv",
+        mime="text/csv"
+    )
     # Summary
     st.subheader(f"Yearly Summary" if selected_month == "All" or selected_year == "All" else "Monthly Summary")
 
