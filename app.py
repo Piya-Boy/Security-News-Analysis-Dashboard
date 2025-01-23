@@ -22,7 +22,7 @@ st.set_page_config(page_title="Security News Analysis", page_icon=logo, layout="
 API_URL = "https://piyamianglae.pythonanywhere.com/data"
 
 # Function to load and preprocess data from API
-@st.cache_data(ttl=86400)  
+@st.cache_data(ttl=86400) 
 def load_data_from_api():
     try:
         # ดึงข้อมูลจาก API
@@ -38,7 +38,7 @@ def load_data_from_api():
 
         # แปลงคอลัมน์ Date เป็น datetime
         df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
-        
+
         # เพิ่มคอลัมน์ Month และ Year
         df["Month"] = df["Date"].dt.strftime("%B") 
         df["Year"] = df["Date"].dt.year.fillna(0).astype(int)
@@ -89,6 +89,7 @@ def main():
     if selected_category != "All":
         filtered_df = filtered_df[filtered_df["Category"] == selected_category]
 
+
     # Group by Source and get the latest update for each source
     latest_updates = df.groupby('Source')['Date'].max().reset_index()
     
@@ -116,12 +117,14 @@ def main():
             return df.to_csv(index=False).encode('utf-8')
         elif file_format == 'JSON':
             return df.to_json(orient='records').encode('utf-8')
+        elif file_format == 'Excel':
+            return df.to_excel(index=False).getvalue()
         else:
             return None
 
     # Add download button with format selection
     st.sidebar.markdown("---", unsafe_allow_html=True)
-    file_format = st.sidebar.selectbox("Select Type", ["CSV", "JSON"])
+    file_format = st.sidebar.selectbox("Select Type", ["CSV", "Excel", "JSON"])
     data_to_download = convert_df(filtered_df, file_format)
     st.sidebar.download_button(
         label=f"Download {file_format}",
@@ -129,7 +132,6 @@ def main():
         file_name=f'Security_News.{file_format.lower()}',
         mime=f'text/{file_format.lower()}', 
     )
-
     # Summary
     st.subheader(f"Yearly Summary" if selected_month == "All" or selected_year == "All" else "Monthly Summary")
 
@@ -199,10 +201,21 @@ def main():
         fig_attack_timeline.update_layout(
             title=f"Attack Types Trend - {selected_month} {selected_year}",
             xaxis_title="Date" if selected_month != "All" and selected_year != "All" else "Year",
-            yaxis_title="Number of Articles",
             hovermode="x unified",
         )
-        fig_attack_timeline.update_xaxes(type="category")        
+        # ไม่เอา xaxis แสดงเป็น 2021-01-01D00:00:00 แต่แสดงเป็น january 2021
+        if selected_month == "All" and selected_year == "All":
+            fig_attack_timeline.update_xaxes(type="category")
+        elif selected_month == "All" and selected_year != "All":
+            # Format for months in a single year
+            fig_attack_timeline.update_xaxes(tickformat="%B-%Y")
+        elif selected_month != "All" and selected_year == "All":
+            # Format for years
+            fig_attack_timeline.update_xaxes(tickformat="%Y")
+        else:
+            # Format for specific dates
+            fig_attack_timeline.update_xaxes(tickformat="%B-%d-%Y")
+
         st.plotly_chart(fig_attack_timeline, use_container_width=True)
 
     with col2:
@@ -245,6 +258,7 @@ def main():
     # Show "More" button if there are more news articles to display
     if st.session_state.news_limit < len(filtered_df):
         st.button("More", on_click=load_more_news)
+
 
 if __name__ == "__main__":
     main()
