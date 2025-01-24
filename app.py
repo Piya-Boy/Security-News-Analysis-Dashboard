@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
+from io import BytesIO
 import requests
 import nltk
 import calendar
@@ -52,6 +53,23 @@ def load_data_from_api():
         return None
 
 
+
+# Function to convert DataFrame to CSV, JSON, or Excel
+def convert_df(df, file_format):
+    if file_format == 'CSV':
+        return df.to_csv(index=False).encode('utf-8')
+    elif file_format == 'JSON':
+        return df.to_json(orient='records').encode('utf-8')
+    elif file_format == 'Excel':
+        # Use BytesIO to create an in-memory bytes buffer
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, index=False, sheet_name='Sheet1')
+        output.seek(0)  # Move cursor to the beginning of the buffer
+        return output.read()
+    else:
+        return None
+    
 def main():
     st.title("Security News Analysis Dashboard")
 
@@ -110,27 +128,30 @@ def main():
         last_updated = row['Date'].strftime("%B %d, %Y")
         st.sidebar.markdown(f"**{formatted_source}**  \nUpdated on {last_updated}", unsafe_allow_html=True)  # Note the double space before \n
 
-    
-    # Function to convert DataFrame to CSV or JSON
-    def convert_df(df, file_format):
-        if file_format == 'CSV':
-            return df.to_csv(index=False).encode('utf-8')
-        elif file_format == 'JSON':
-            return df.to_json(orient='records').encode('utf-8')
-        elif file_format == 'Excel':
-            return df.to_excel(index=False).getvalue()
-        else:
-            return None
-
-    # Add download button with format selection
+     # Add download button with format selection
     st.sidebar.markdown("---", unsafe_allow_html=True)
     file_format = st.sidebar.selectbox("Select Type", ["CSV", "Excel", "JSON"])
-    data_to_download = convert_df(filtered_df, file_format)
+ 
+    # Convert DataFrame to selected format
+    converted_data = convert_df(df, file_format)
+
+    # Set MIME type and file extension
+    if file_format == 'CSV':
+        mime_type = 'text/csv'
+        file_extension = 'csv'
+    elif file_format == 'JSON':
+        mime_type = 'application/json'
+        file_extension = 'json'
+    elif file_format == 'Excel':
+        mime_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        file_extension = 'xlsx'
+
+    # Download button
     st.sidebar.download_button(
         label=f"Download {file_format}",
-        data=data_to_download,
-        file_name=f'Security_News.{file_format.lower()}',
-        mime=f'text/{file_format.lower()}', 
+        data=converted_data,
+        file_name=f"security_news.{file_extension}",
+        mime=mime_type
     )
     # Summary
     st.subheader(f"Yearly Summary" if selected_month == "All" or selected_year == "All" else "Monthly Summary")
