@@ -1,0 +1,8 @@
+{
+    "ransomware": ["ransomware", "ransom", "encryption attack", "decrypt key"],
+    "malware": ["malware", "virus", "trojan", "worm"],
+    "phishing": ["phishing", "spear phishing", "social engineering"],
+    "data breach": ["data breach", "leak", "exposed data"],
+    "ddos": ["ddos", "denial of service", "traffic flood"],
+    "vulnerability": ["vulnerability", "exploit", "zero-day", "security flaw"]
+}
